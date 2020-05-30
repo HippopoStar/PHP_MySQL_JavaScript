@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+		<style type="text/css">
+
+			#header {
+				font-size: 20px;
+				font-weight: bold;
+				text-align: center;
+			}
+
+			#map_container {
+				position: relative;
+				width: 750px;
+				height: 450px;
+				border-style: solid;
+				border-color: gray;
+				border-width: 1px;
+			}
+
+		</style>
+		<script type="text/javascript" src="/js/d3.min.js"></script>
+		<script type="text/javascript" src="/js/topojson.min.js"></script>
+		<script type="text/javascript" src="/js/datamaps.world.min.js"></script>
+		<script type="text/javascript" src="/js/json2.js"></script>
+		<script type="text/javascript">
+			"use strict";
+
+			var g_myRequestsManager;
+			var g_myMap;
+			var g_myPageAnimation;
+
+			/********************************/
+			/* GLOBAL NAMESPACE *************/
+			/********************************/
+
+			if (!Function.prototype.bind) {
+				Function.prototype.bind = function (context) {
+					var myFunction;
+					var myArguments;
+					var i;
+
+					myFunction = this;
+					myArguments = [];
+					for (i = 1; i < arguments.length; i++) {
+						myArguments.push(arguments[i]);
+					}
+					return (function () {
+						myFunction.apply(context, myArguments);
+					});
+				};
+			}
+
+			/**
+			* La fonction appelee une fois le corps de la page charge
+			*/
+			function ft_load_page () {
+				g_myMap.init();
+				g_myPageAnimation.init();
+				g_myPageAnimation.loadingStart();
+			}
+
+			/**
+			* Converti un objet Date en chaine de caractere au format yyyy-MM-dd
+			* @param myDate {Date} L'instance de la classe date a convertir
+			* @return {String} La chaine de caractere obtenue
+			*/
+			function ft_date_to_tring (myDate) {
+				var y;
+				var m;
+				var d;
+				var s;
+
+				s = "";
+				y = myDate.getFullYear();
+				m = myDate.getMonth() + 1;
+				d = myDate.getDate();
+				s = y + "-" + (m > 9 ? m : "0" + m) + "-" + (d > 9 ? d : "0" + d);
+				return (s);
+			}
+
+			/**
+			* Supprime tous les noeuds fils d'un element DOM
+			* @param elemDOM {Object} L'element DOM dont le contenu est a supprimer
+			*/
+			function ft_flushDIV (elemDOM) {
+				var l;
+				var i;
+
+				if (elemDOM && elemDOM.hasChildNodes()) {
+					l = elemDOM.children;
+					i = l.length - 1;
+					while (i >= 0) {
+						elemDOM.removeChild(l[i]);
+						i--;
+					}
+				}
+			}
+
+			/**
+			* Fonction recursive permettant d'afficher le contenu d'une variable dans un noeud element de la page
+			* @param elemDOM {Object} L'element DOM dans lequel faire apparaitre la variable
+			* @param stuff {Object|Array|Number|String} La variable a mettre en page
+			*/
+			function ft_printStuffTable (elemDOM, stuff) {
+				var e;
+				var row;
+				var col_left;
+				var col_right;
+				var t;
+				var s;
+				var p;
+				var i;
+				var len;
+
+				if (stuff) {
+					if (typeof(stuff) == "number") {
+						s = stuff.toString();
+						t = document.createTextNode(s);
+						elemDOM.appendChild(t);
+					}
+					else if (typeof(stuff) == "string") {
+						t = document.createTextNode(stuff);
+						elemDOM.appendChild(t);
+					}
+					else if (typeof(stuff) == "object") {
+						if (stuff.constructor.name == "Array") { // ou instanceof(Array)
+							len = stuff.length;
+							i = 0;
+							while (i < len) {
+								e = document.createElement("div");
+								printStuffTable(e, stuff[i]);
+								elemDOM.appendChild(e);
+								i++;
+							}
+						}
+						else {
+							e = document.createElement("table");
+							e.border = '1';
+							for (p in stuff) {
+								s = "";
+								s = s + p;
+								row = document.createElement("tr");
+								col_left = document.createElement("td");
+								col_right = document.createElement("td");
+								t = document.createTextNode(s);
+								col_left.appendChild(t);
+								row.appendChild(col_left);
+								printStuffTable(col_right, stuff[p]);
+								row.appendChild(col_right);
+								e.appendChild(row);
+							}
+							elemDOM.appendChild(e);
+						}
+					}
+				}
+				else {
+					t = document.createTextNode("{ null }");
+					elemDOM.appendChild(t);
+				}
+			}
+
+			/********************************/
+			/* REQUESTS MANAGER *************/
+			/********************************/
+
+			g_myRequestsManager = ( function () {
+				/**
+				* Obtenir une instance de la classe permettant d'effectuer des requetes cross-domain suivant le navigateur courant
+				* @return {Object} Une instance de la classe requise
+				*/
+				function getXDomainRequest () {
+					var xdr;
+
+					xdr = null;
+					if (window.XDomainRequest) {
+						xdr = new XDomainRequest ();
+					}
+					else if (window.XMLHttpRequest) {
+						xdr = new XMLHttpRequest ();
+					}
+					return (xdr);
+				}
+				return ({
+					/**
+					* Effectuer l'envoie d'une requete POST au serveur, et appeler une fonction prenant en parametre le corps de la reponse du serveur
+					* @param paramsHTTP {String} Le corps de la requete POST
+					* @param callBack {Function} La fonction prenant en parametre le corps de la reponse si la requete reussie
+					*/
+					sendPostRequest: function (paramsHTTP, callBack) {
+						var xmlhttp;
+
+						xmlhttp = getXDomainRequest();
+						if (xmlhttp) {
+							xmlhttp.onload = function () {
+								callBack(this.responseText);
+							}
+							xmlhttp.onerror = function () {
+								alert("Une erreur est survenue lors de l'envoi de la requete");
+							}
+							xmlhttp.open("POST", g_serverAddress);
+							xmlhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+							try {
+								xmlhttp.send(paramsHTTP);
+							} catch (err) {
+								alert("AJAX error: " + err);
+							}
+						}
+					}
+				});
+			} ) ();
+
+			/********************************/
+			/* MAP **************************/
+			/********************************/
+
+			g_myMap = ( function () {
+				var e;
+				var o;
+
+				return ({
+					mapObject: null,
+					selectedCountry: null,
+
+					init: function () {
+						e = document.getElementById('map_container');
+						o = {
+							element: e,
+							scope: 'world',
+							projection: 'mercator',
+							fills: {
+								defaultFill: "#C0C0C0",
+								red: "#FF8080",
+								green: "#80FF80",
+								blue: "#8080FF"
+							},
+							geographyConfig: {
+								highlightFillColor: "#8080FF",
+								highlightBorderColor: "#4040FF",
+								popupTemplate: ( function (geography, data) { //this function should just return a string
+									return ('<div class="hoverinfo"><strong>' + geography.properties.name + '</strong><br>'
+										+ geography.id + '</div>');
+								} ).bind(this) // BIND
+							},
+							data: {
+								FRA: { fillKey: "blue" }
+							},
+							done: ( function (datamap) {
+								datamap.svg.selectAll('.datamaps-subunit').on('click', ( function (geography) {
+									this.selectedCountry = geography;
+									console.log(geography.id);
+								} ).bind(this)) // BIND
+							} ).bind(this) // BIND
+						};
+						this.mapObject = new Datamap(o);
+					}
+				});
+			} ) ();
+
+			/********************************/
+			/* PAGE ANIMATION ***************/
+			/********************************/
+
+			g_myPageAnimation = ( function () {
+				var e_loading_message;
+				var e_loading_animation;
+				var loading_animation_boolean;
+				var loading_animation_html_code;
+
+				return ({
+					init: function () {
+						e_loading_message = document.getElementById('loading_message');
+						e_loading_animation = document.getElementById('loading_animation');
+						loading_animation_boolean = false;
+						loading_animation_html_code = "&#8987;";
+					},
+					loadingStart: function () {
+						e_loading_message.style.display = "block";
+						loading_animation_boolean = true;
+						console.log("Loading...");
+						this.loadingAnimate();
+					},
+					loadingAnimate: function () {
+						if (loading_animation_html_code == "&#8987;") {
+							loading_animation_html_code = "&#9203;"; // Sablier avec coulee de sable
+							e_loading_animation.innerHTML = loading_animation_html_code;
+						}
+						else {
+							loading_animation_html_code = "&#8987;"; // Sablier
+							e_loading_animation.innerHTML = loading_animation_html_code;
+						}
+						if (loading_animation_boolean) {
+							window.setTimeout(this.loadingAnimate.bind(this), 1000); // BIND
+						}
+					},
+					loadingStop: function () {
+						e_loading_message.style.display = "none";
+						loading_animation_boolean = false;
+					}
+				});
+			} ) ();
+
+		</script>
+	</head>
+	<body onload="ft_load_page()">
+		<table border='0'>
+			<tr>
+				<td colspan="2">
+					<div id="header">Je vous souhaite la bienvenue ! &#12484;</div>
+				</td>
+			</tr>
+			<tr>
+				<td rowspan="2">
+					<div id="map_container"></div>
+				</td>
+				<td>
+					<div id="loading_message" style="display: none; color: gray;">
+						<span>Loading... </span>
+						<span id="loading_animation">&#8987;</span>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<p style="color: gray;">
+						Un paragraphe lourd de sens<br>
+						s'etalant sur plusieurs lignes<br>
+					</p>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>
