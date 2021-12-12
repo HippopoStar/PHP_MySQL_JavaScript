@@ -221,13 +221,13 @@
 
 				return ({
 					mapObject: null,
-					selectedCountry: null,
+					selectedDepartment: null,
 
 					init: function () {
 						e = document.getElementById('map_container');
 						o = {
 							element: e,
-							scope: 'world',
+							scope: 'fra',
 							projection: 'mercator',
 							fills: {
 								defaultFill: "#C0C0C0",
@@ -238,17 +238,27 @@
 							geographyConfig: {
 								highlightFillColor: "#8080FF",
 								highlightBorderColor: "#4040FF",
+								dataUrl: '/json/fra.topo.json',
+								borderColor: '#E0E0E0',
+								borderWidth: 0.5,
 								popupTemplate: ( function (geography, data) { //this function should just return a string
 									return ('<div class="hoverinfo"><strong>' + geography.properties.name + '</strong><br>'
 										+ geography.id + '</div>');
 								} ).bind(this) // BIND
 							},
 							data: {
-								FRA: { fillKey: "blue" }
+								'FR.MB': { fillKey: "blue" }
 							},
+							setProjection: ( function (element) {
+								var projection = d3.geo.mercator()
+									.center([2.3610, 46.2938]) // always in [East Latitude, North Longitude]
+									.scale(1750);
+								var path = d3.geo.path().projection(projection);
+								return { path: path, projection: projection };
+							} ).bind(this), // BIND
 							done: ( function (datamap) {
 								datamap.svg.selectAll('.datamaps-subunit').on('click', ( function (geography) {
-									this.selectedCountry = geography;
+									this.selectedDepartment = geography;
 									console.log(geography.id);
 								} ).bind(this)) // BIND
 							} ).bind(this) // BIND
