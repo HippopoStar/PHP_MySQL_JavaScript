@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+		<style type="text/css">
+
+			#header {
+				font-size: 20px;
+				font-weight: bold;
+				text-align: center;
+			}
+
+			.chessboard_coordinates {
+				text-align: center;
+			}
+
+			.chessboard_square_white,.chessboard_square_black {
+				width: 40px;
+				height:  40px;
+				font-size: 40px;
+				text-align: center;
+			}
+
+			.chessboard_square_white {
+				background-color: beige;
+			}
+
+			.chessboard_square_black {
+				background-color: burlywood;
+			}
+
+		</style>
+		<script type="text/javascript">
+			"use strict";
+
+			var g_html_codes = {
+				"chessboard": {
+					"corner_character": {
+						"description": "Katakana Letter Tu",
+						"unicode": "U+30C4",
+						"html": "&#12484;"
+					},
+					"empty_square": {
+						"description": "Ballot Box",
+						"unicode": "U+30C4",
+						"html": "&#12484;"
+					},
+					"white_square_left": {
+						"description": "Left White Lenticular Bracket",
+						"unicode": "U+3016",
+						"html": "&#12310;"
+					},
+					"white_square_right": {
+						"description": "Right White Lenticular Bracket",
+						"unicode": "U+3017",
+						"html": "&#12311;"
+					},
+					"black_square_left": {
+						"description": "Left Black Lenticular Bracket",
+						"unicode": "U+3010",
+						"html": "&#12304;"
+					},
+					"black_square_right": {
+						"description": "Right Black Lenticular Bracket",
+						"unicode": "U+3011",
+						"html": "&#12305;"
+					},
+					"white_team": {
+						"up": {
+							"king": {
+								"unicode": "U+2654",
+								"html": "&#9812;"
+							},
+							"queen": {
+								"unicode": "U+2655",
+								"html": "&#9813;"
+							},
+							"rook": {
+								"unicode": "U+2656",
+								"html": "&#9814;"
+							},
+							"bishop": {
+								"unicode": "U+2657",
+								"html": "&#9815;"
+							},
+							"knight": {
+								"unicode": "U+2658",
+								"html": "&#9816;"
+							},
+							"pawn": {
+								"unicode": "U+2659",
+								"html": "&#9817;"
+							}
+						}
+					},
+					"black_team": {
+						"up": {
+							"king": {
+								"unicode": "U+265A",
+								"html": "&#9818;"
+							},
+							"queen": {
+								"unicode": "U+265B",
+								"html": "&#9819;"
+							},
+							"rook": {
+								"unicode": "U+265C",
+								"html": "&#9820;"
+							},
+							"bishop": {
+								"unicode": "U+265D",
+								"html": "&#9821;"
+							},
+							"knight": {
+								"unicode": "U+265E",
+								"html": "&#9822;"
+							},
+							"pawn": {
+								"unicode": "U+265F",
+								"html": "&#9823;"
+							}
+						}
+					}
+				}
+			};
+
+			var g_chessboard_pieces = {
+				"&#9812;": {
+					"type": "king",
+					"color": "white_team"
+				},
+				"&#9813;": {
+					"type": "queen",
+					"color": "white_team"
+				},
+				"&#9814;": {
+					"type": "rook",
+					"color": "white_team"
+				},
+				"&#9815;": {
+					"type": "bishop",
+					"color": "white_team"
+				},
+				"&#9816;": {
+					"type": "knight",
+					"color": "white_team"
+				},
+				"&#9817;": {
+					"type": "pawn",
+					"color": "white_team"
+				},
+				"&#9818;": {
+					"type": "king",
+					"color": "black_team"
+				},
+				"&#9819;": {
+					"type": "queen",
+					"color": "black_team"
+				},
+				"&#9820;": {
+					"type": "rook",
+					"color": "black_team"
+				},
+				"&#9821;": {
+					"type": "bishop",
+					"color": "black_team"
+				},
+				"&#9822;": {
+					"type": "knight",
+					"color": "black_team"
+				},
+				"&#9823;": {
+					"type": "pawn",
+					"color": "black_team"
+				}
+			};
+
+			function ft_load_page () {
+				g_chessboard_controller.init();
+			}
+
+			var g_chessboard_controller = (function () {
+				var e_chessboard = [
+					[],
+					[],
+					[],
+					[],
+					[],
+					[],
+					[],
+					[]
+				];
+				var abstract_chessboard = [
+					[
+						g_html_codes["chessboard"]["white_team"]["up"]["rook"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["knight"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["bishop"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["queen"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["king"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["bishop"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["knight"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["rook"]["html"]
+					],
+					[
+						g_html_codes["chessboard"]["white_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["white_team"]["up"]["pawn"]["html"]
+					],
+					["", "", "", "", "", "", "", ""],
+					["", "", "", "", "", "", "", ""],
+					["", "", "", "", "", "", "", ""],
+					["", "", "", "", "", "", "", ""],
+					[
+						g_html_codes["chessboard"]["black_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["pawn"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["pawn"]["html"]
+					],
+					[
+						g_html_codes["chessboard"]["black_team"]["up"]["rook"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["knight"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["bishop"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["queen"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["king"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["bishop"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["knight"]["html"],
+						g_html_codes["chessboard"]["black_team"]["up"]["rook"]["html"]
+					]
+				];
+
+				return ({
+					init: function () {
+						window.console.log("g_chessboard_controller - init: Associating chessboard DOM nodes");
+						e_chessboard[0][0] = window.document.getElementById('A1');
+						e_chessboard[0][1] = window.document.getElementById('B1');
+						e_chessboard[0][2] = window.document.getElementById('C1');
+						e_chessboard[0][3] = window.document.getElementById('D1');
+						e_chessboard[0][4] = window.document.getElementById('E1');
+						e_chessboard[0][5] = window.document.getElementById('F1');
+						e_chessboard[0][6] = window.document.getElementById('G1');
+						e_chessboard[0][7] = window.document.getElementById('H1');
+						e_chessboard[1][0] = window.document.getElementById('A2');
+						e_chessboard[1][1] = window.document.getElementById('B2');
+						e_chessboard[1][2] = window.document.getElementById('C2');
+						e_chessboard[1][3] = window.document.getElementById('D2');
+						e_chessboard[1][4] = window.document.getElementById('E2');
+						e_chessboard[1][5] = window.document.getElementById('F2');
+						e_chessboard[1][6] = window.document.getElementById('G2');
+						e_chessboard[1][7] = window.document.getElementById('H2');
+						e_chessboard[2][0] = window.document.getElementById('A3');
+						e_chessboard[2][1] = window.document.getElementById('B3');
+						e_chessboard[2][2] = window.document.getElementById('C3');
+						e_chessboard[2][3] = window.document.getElementById('D3');
+						e_chessboard[2][4] = window.document.getElementById('E3');
+						e_chessboard[2][5] = window.document.getElementById('F3');
+						e_chessboard[2][6] = window.document.getElementById('G3');
+						e_chessboard[2][7] = window.document.getElementById('H3');
+						e_chessboard[3][0] = window.document.getElementById('A4');
+						e_chessboard[3][1] = window.document.getElementById('B4');
+						e_chessboard[3][2] = window.document.getElementById('C4');
+						e_chessboard[3][3] = window.document.getElementById('D4');
+						e_chessboard[3][4] = window.document.getElementById('E4');
+						e_chessboard[3][5] = window.document.getElementById('F4');
+						e_chessboard[3][6] = window.document.getElementById('G4');
+						e_chessboard[3][7] = window.document.getElementById('H4');
+						e_chessboard[4][0] = window.document.getElementById('A5');
+						e_chessboard[4][1] = window.document.getElementById('B5');
+						e_chessboard[4][2] = window.document.getElementById('C5');
+						e_chessboard[4][3] = window.document.getElementById('D5');
+						e_chessboard[4][4] = window.document.getElementById('E5');
+						e_chessboard[4][5] = window.document.getElementById('F5');
+						e_chessboard[4][6] = window.document.getElementById('G5');
+						e_chessboard[4][7] = window.document.getElementById('H5');
+						e_chessboard[5][0] = window.document.getElementById('A6');
+						e_chessboard[5][1] = window.document.getElementById('B6');
+						e_chessboard[5][2] = window.document.getElementById('C6');
+						e_chessboard[5][3] = window.document.getElementById('D6');
+						e_chessboard[5][4] = window.document.getElementById('E6');
+						e_chessboard[5][5] = window.document.getElementById('F6');
+						e_chessboard[5][6] = window.document.getElementById('G6');
+						e_chessboard[5][7] = window.document.getElementById('H6');
+						e_chessboard[6][0] = window.document.getElementById('A7');
+						e_chessboard[6][1] = window.document.getElementById('B7');
+						e_chessboard[6][2] = window.document.getElementById('C7');
+						e_chessboard[6][3] = window.document.getElementById('D7');
+						e_chessboard[6][4] = window.document.getElementById('E7');
+						e_chessboard[6][5] = window.document.getElementById('F7');
+						e_chessboard[6][6] = window.document.getElementById('G7');
+						e_chessboard[6][7] = window.document.getElementById('H7');
+						e_chessboard[7][0] = window.document.getElementById('A8');
+						e_chessboard[7][1] = window.document.getElementById('B8');
+						e_chessboard[7][2] = window.document.getElementById('C8');
+						e_chessboard[7][3] = window.document.getElementById('D8');
+						e_chessboard[7][4] = window.document.getElementById('E8');
+						e_chessboard[7][5] = window.document.getElementById('F8');
+						e_chessboard[7][6] = window.document.getElementById('G8');
+						e_chessboard[7][7] = window.document.getElementById('H8');
+					},
+					select: function (attribute_id, property_textContent) {
+						var element_attribute_id = attribute_id;
+						var element_property_textContent = (property_textContent.length > 0) ? "&#" + property_textContent.charCodeAt(0) + ";" : "";
+						var log_str_selected_square = "g_chessboard_controller - select: element_attribute_id ["
+							+ element_attribute_id
+							+ "]; element_property_textContent ["
+							+ element_property_textContent
+							+ "]";
+						if (g_chessboard_pieces.hasOwnProperty(element_property_textContent)) {
+							log_str_selected_square = log_str_selected_square
+								+ " ("
+								+ g_chessboard_pieces[element_property_textContent]["color"]
+								+ " "
+								+ g_chessboard_pieces[element_property_textContent]["type"]
+								+ ")";
+						}
+						window.console.log(log_str_selected_square);
+					},
+					render: function () {
+						var i;
+						var j;
+						i = 0;
+						while (i < 8) {
+							j = 0;
+							while (j < 8) {
+								e_chessboard[i][j].innerHTML = abstract_chessboard[i][j];
+								j++;
+							}
+							i++;
+						}
+					},
+					test_white_rook_e4: function () {
+						e_chessboard[3][4].innerHTML = g_html_codes["chessboard"]["white_team"]["up"]["rook"]["html"];
+					},
+					test_render_knight_c6: function () {
+						abstract_chessboard[5][2] = g_html_codes["chessboard"]["white_team"]["up"]["knight"]["html"];
+						this.render();
+					},
+					test: function () {
+						this.test_render_knight_c6();
+						this.test_white_rook_e4();
+					}
+				});
+			} ) ();
+
+		</script>
+	</head>
+	<body onload="ft_load_page()">
+		<table border='0'>
+			<tr>
+				<td>
+					<div class="chessboard_coordinates" id="A9">A</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="B9">B</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="C9">C</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="D9">D</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="E9">E</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="F9">F</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="G9">G</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="H9">H</div>
+				</td>
+				<td>
+					<div class="chessboard_corner" id="chessboard_corner" onClick="g_chessboard_controller.test();">&#12484;</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div class="chessboard_square_white" id="A8" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9820;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="B8" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9822;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="C8" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9821;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="D8" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9819;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="E8" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9818;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="F8" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9821;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="G8" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9822;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="H8" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9820;</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="G8">8</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div class="chessboard_square_black" id="A7" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9823;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="B7" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9823;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="C7" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9823;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="D7" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9823;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="E7" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9823;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="F7" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9823;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="G7" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9823;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="H7" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9823;</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="G7">7</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div class="chessboard_square_white" id="A6" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="B6" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="C6" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="D6" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="E6" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="F6" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="G6" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="H6" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="G6">6</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div class="chessboard_square_black" id="A5" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="B5" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="C5" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="D5" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="E5" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="F5" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="G5" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="H5" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="G5">5</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div class="chessboard_square_white" id="A4" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="B4" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="C4" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="D4" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="E4" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="F4" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="G4" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="H4" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="G4">4</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div class="chessboard_square_black" id="A3" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="B3" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="C3" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="D3" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="E3" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="F3" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="G3" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="H3" onClick="g_chessboard_controller.select(this.id, this.textContent);"></div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="G3">3</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div class="chessboard_square_white" id="A2" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9817;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="B2" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9817;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="C2" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9817;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="D2" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9817;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="E2" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9817;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="F2" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9817;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="G2" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9817;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="H2" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9817;</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="G2">2</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div class="chessboard_square_black" id="A1" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9814;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="B1" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9816;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="C1" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9815;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="D1" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9813;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="E1" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9812;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="F1" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9815;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_black" id="G1" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9816;</div>
+				</td>
+				<td>
+					<div class="chessboard_square_white" id="H1" onClick="g_chessboard_controller.select(this.id, this.textContent);">&#9814;</div>
+				</td>
+				<td>
+					<div class="chessboard_coordinates" id="G1">1</div>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>
