@@ -175,11 +175,22 @@
 				}
 			};
 
+			var g_css_colors = {
+				"background": {
+					"white_square": "beige",
+					"black_square": "burlywood",
+					"player_available_move": "lightblue",
+					"opponent_available_move": "palevioletred"
+				}
+			};
+
 			function ft_load_page () {
 				g_chessboard_controller.init();
 			}
 
 			var g_chessboard_controller = (function () {
+				var previously_selected_piece = {};
+				var player_color = "white_team";
 				var e_chessboard = [
 					[],
 					[],
@@ -236,6 +247,79 @@
 						g_html_codes["chessboard"]["black_team"]["up"]["rook"]["html"]
 					]
 				];
+
+				function position_to_square (line, column) {
+					var column_identifiers = ["A", "B", "C", "D", "E", "F", "G", "H"];
+					return (column_identifiers[column % 8] + ((line % 8) + 1).toString());
+				}
+
+				function square_to_position (square) {
+					var column_numbers = {
+						"A": 1,
+						"B": 2,
+						"C": 3,
+						"D": 4,
+						"E": 5,
+						"F": 6,
+						"G": 7,
+						"H": 8
+					};
+					var line_number = 0;
+					var column_number = 0;
+					if (square.length > 1 && column_numbers.hasOwnProperty(square.charAt(0)) && !(window.Number.isNaN(window.parseInt(square.charAt(1))))) {
+						if (0 < window.parseInt(square.charAt(1)) && window.parseInt(square.charAt(1)) < 9) {
+							line_number = window.parseInt(square.charAt(1)) - 1;
+						}
+						column_number = column_numbers[square.charAt(0)] - 1;
+					}
+					return ([line_number, column_number]);
+				}
+
+				function is_opponent_piece (piece) {
+					if (g_chessboard_pieces.hasOwnProperty(piece)) {
+						if (g_chessboard_pieces[piece]["color"] === player_color) {
+							return (false);
+						}
+						else {
+							return (true);
+						}
+					}
+					window.console.log("Unexpected behaviour in function \"is_opponent_piece\"");
+					return (false);
+				}
+
+				function calculate_available_moves (piece, position) {
+					return ([[3, 4], [5, 2]]);
+				}
+
+				function is_available_move (position) {
+					var i;
+					if (position instanceof Array && position.length > 1
+							&& previously_selected_piece.hasOwnProperty("available_moves")
+							&& previously_selected_piece["available_moves"] instanceof Array) {
+						i = 0;
+						while (i < previously_selected_piece["available_moves"].length) {
+							if (previously_selected_piece["available_moves"][i] instanceof Array
+									&& previously_selected_piece["available_moves"][i].length > 1) {
+								if (position[0] === previously_selected_piece["available_moves"][i][0]
+										&& position[1] === previously_selected_piece["available_moves"][i][1]) {
+									return (true);
+								}
+							}
+							else {
+								window.console.log("Unexpected behaviour in function \"is_available_move\"");
+							}
+							i++;
+						}
+						return (false);
+					}
+					window.console.log("Unexpected behaviour in function \"is_available_move\"");
+					return (false);
+				}
+
+				function move_piece (position) {
+
+				}
 
 				return ({
 					init: function () {
@@ -308,9 +392,12 @@
 					select: function (attribute_id, property_textContent) {
 						var element_attribute_id = attribute_id;
 						var element_property_textContent = (property_textContent.length > 0) ? "&#" + property_textContent.charCodeAt(0) + ";" : "";
+						var selected_position = square_to_position(element_attribute_id);
 						var log_str_selected_square = "g_chessboard_controller - select: element_attribute_id ["
 							+ element_attribute_id
-							+ "]; element_property_textContent ["
+							+ "] ("
+							+ window.JSON.stringify(selected_position)
+							+ "); element_property_textContent ["
 							+ element_property_textContent
 							+ "]";
 						if (g_chessboard_pieces.hasOwnProperty(element_property_textContent)) {
@@ -320,20 +407,103 @@
 								+ " "
 								+ g_chessboard_pieces[element_property_textContent]["type"]
 								+ ")";
+							if (previously_selected_piece.hasOwnProperty("type")) {
+								if (previously_selected_piece.hasOwnProperty("position")
+										&& previously_selected_piece["position"] instanceof Array
+										&& previously_selected_piece["position"].length > 1
+										&& previously_selected_piece["position"][0] === selected_position[0]
+										&& previously_selected_piece["position"][1] === selected_position[1]) {
+									/* Same piece selected */
+									/* Do nothing */
+									window.console.log("g_chessboard_controller - select: same square as previously selected");
+								}
+								else {
+									if (is_available_move(selected_position)) {
+										move_piece(selected_position);
+										// previously_selected_piece = {};
+									}
+									else if (is_opponent_piece(element_property_textContent)) {
+										previously_selected_piece["type"] = g_chessboard_pieces[element_property_textContent]["type"];
+										previously_selected_piece["color"] = g_chessboard_pieces[element_property_textContent]["color"];
+										previously_selected_piece["position"] = selected_position;
+										previously_selected_piece["available_moves"] = calculate_available_moves(element_property_textContent, selected_position);
+									}
+									else {
+										if (previously_selected_piece.hasOwnProperty("color")) {
+											if (previously_selected_piece["color"] === player_color) {
+												window.console.log("g_chessboard_controller - select: player selected another piece");
+											}
+										}
+										else {
+											window.console.log("Unexpected behaviour in function \"select\"");
+										}
+										previously_selected_piece["type"] = g_chessboard_pieces[element_property_textContent]["type"];
+										previously_selected_piece["color"] = g_chessboard_pieces[element_property_textContent]["color"];
+										previously_selected_piece["position"] = selected_position;
+										previously_selected_piece["available_moves"] = calculate_available_moves(element_property_textContent, selected_position);
+									}
+									this.render();
+								}
+							}
+							else {
+								if (g_chessboard_pieces.hasOwnProperty(element_property_textContent)) {
+									previously_selected_piece["type"] = g_chessboard_pieces[element_property_textContent]["type"];
+									previously_selected_piece["color"] = g_chessboard_pieces[element_property_textContent]["color"];
+									previously_selected_piece["position"] = selected_position;
+									previously_selected_piece["available_moves"] = calculate_available_moves(element_property_textContent, selected_position);
+									this.render();
+								}
+								else {
+									window.console.log("Unexpected behaviour in function \"select\"");
+								}
+							}
+						}
+						else if (previously_selected_piece.hasOwnProperty("type")) {
+							previously_selected_piece = {};
+							this.render();
+						}
+						else {
+							/* Nothing selected as previously */
+							/* Do nothing */
+							window.console.log("g_chessboard_controller - select: empty square selected as previously");
 						}
 						window.console.log(log_str_selected_square);
 					},
 					render: function () {
+						var background_color = g_css_colors["background"]["white_square"];
 						var i;
 						var j;
+						var k;
 						i = 0;
 						while (i < 8) {
 							j = 0;
 							while (j < 8) {
 								e_chessboard[i][j].innerHTML = abstract_chessboard[i][j];
+								background_color = ((i + j) % 2 === 0) ? g_css_colors["background"]["black_square"] :  g_css_colors["background"]["white_square"];
+								e_chessboard[i][j].style.backgroundColor = background_color;
 								j++;
 							}
 							i++;
+						}
+						if (previously_selected_piece.hasOwnProperty("color")
+								&& previously_selected_piece.hasOwnProperty("available_moves")
+								&& previously_selected_piece["available_moves"] instanceof Array) {
+							background_color = (previously_selected_piece["color"] === player_color)
+									? g_css_colors["background"]["player_available_move"]
+									: g_css_colors["background"]["opponent_available_move"];
+							k = 0;
+							while (k < previously_selected_piece["available_moves"].length) {
+								if (previously_selected_piece["available_moves"][k] instanceof Array
+										&& previously_selected_piece["available_moves"][k].length > 1
+										&& 0 <= previously_selected_piece["available_moves"][k][0] && previously_selected_piece["available_moves"][k][0] < 8
+										&& 0 <= previously_selected_piece["available_moves"][k][1] && previously_selected_piece["available_moves"][k][1] < 8) {
+									e_chessboard[previously_selected_piece["available_moves"][k][0]][previously_selected_piece["available_moves"][k][1]].style.backgroundColor = background_color;
+								}
+								else {
+									window.console.log("Unexpected behaviour in function \"render\"");
+								}
+								k++;
+							}
 						}
 					},
 					test_white_rook_e4: function () {
@@ -343,9 +513,13 @@
 						abstract_chessboard[5][2] = g_html_codes["chessboard"]["white_team"]["up"]["knight"]["html"];
 						this.render();
 					},
+					test_position_to_square_h5: function () {
+						window.console.log("test_position_to_square_h5: " + position_to_square(4, 7));
+					},
 					test: function () {
 						this.test_render_knight_c6();
 						this.test_white_rook_e4();
+						this.test_position_to_square_h5();
 					}
 				});
 			} ) ();
