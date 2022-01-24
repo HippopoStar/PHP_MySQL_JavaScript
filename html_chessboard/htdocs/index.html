@@ -29,6 +29,28 @@
 				background-color: burlywood;
 			}
 
+			.input,.output {
+
+			}
+
+			.button {
+				font-size: 10px;
+			}
+
+			.team_selection {
+				text-align: center;
+			}
+
+			#white_team {
+				color: black;
+				background-color: white;
+			}
+
+			#black_team {
+				color: white;
+				background-color: black;
+			}
+
 		</style>
 		<script type="text/javascript">
 			"use strict";
@@ -121,6 +143,18 @@
 							}
 						}
 					}
+				},
+				"move_indicators": {
+					"white_team": {
+						"description": "White Right Pointing Index",
+						"unicode": "U+261E",
+						"html": "&#9758;",
+					},
+					"black_team": {
+						"description": "Black Right Pointing Index",
+						"unicode": "U+261B",
+						"html": "&#9755",
+					}
 				}
 			};
 
@@ -189,6 +223,8 @@
 			}
 
 			var g_chessboard_controller = (function () {
+				var e_import;
+				var e_export;
 				var previously_selected_piece = {};
 				var player_color = "white_team";
 				var e_chessboard = [
@@ -247,6 +283,25 @@
 						g_html_codes["chessboard"]["black_team"]["up"]["rook"]["html"]
 					]
 				];
+				var export_template = "__A___B___C___D___E___F___G___H__\n"
+						+ "|_ _|_ _|_ _|_ _|_ _|_ _|_ _|_ _| 8\n"
+						+ "|_ _|_ _|_ _|_ _|_ _|_ _|_ _|_ _| 7\n"
+						+ "|_ _|_ _|_ _|_ _|_ _|_ _|_ _|_ _| 6\n"
+						+ "|_ _|_ _|_ _|_ _|_ _|_ _|_ _|_ _| 5\n"
+						+ "|_ _|_ _|_ _|_ _|_ _|_ _|_ _|_ _| 4\n"
+						+ "|_ _|_ _|_ _|_ _|_ _|_ _|_ _|_ _| 3\n"
+						+ "|_ _|_ _|_ _|_ _|_ _|_ _|_ _|_ _| 2\n"
+						+ "|_ _|_ _|_ _|_ _|_ _|_ _|_ _|_ _| 1\n";
+				var export_original = "__A___B___C___D___E___F___G___H__\n"
+						+ "|_?_|_?_|_?_|_?_|_?_|_?_|_?_|_?_| 8\n"
+						+ "|_?_|_?_|_?_|_?_|_?_|_?_|_?_|_?_| 7\n"
+						+ "|_?_|_?_|_?_|_?_|_?_|_?_|_?_|_?_| 6\n"
+						+ "|_?_|_?_|_?_|_?_|_?_|_?_|_?_|_?_| 5\n"
+						+ "|_?_|_?_|_?_|_?_|_?_|_?_|_?_|_?_| 4\n"
+						+ "|_?_|_?_|_?_|_?_|_?_|_?_|_?_|_?_| 3\n"
+						+ "|_?_|_?_|_?_|_?_|_?_|_?_|_?_|_?_| 2\n"
+						+ "|_?_|_?_|_?_|_?_|_?_|_?_|_?_|_?_| 1\n";
+				var last_move_description = "";
 
 				function position_to_square (line, column) {
 					var column_identifiers = ["A", "B", "C", "D", "E", "F", "G", "H"];
@@ -643,6 +698,11 @@
 							&& previously_selected_piece.hasOwnProperty("color")) {
 						abstract_chessboard[position[0]][position[1]] = g_html_codes["chessboard"][previously_selected_piece["color"]]["up"][previously_selected_piece["type"]]["html"];
 						abstract_chessboard[previously_selected_piece["position"][0]][previously_selected_piece["position"][1]] = "";
+						last_move_description = g_html_codes["move_indicators"][previously_selected_piece["color"]]["html"]
+								+ " "
+								+ previously_selected_piece["type"]
+								+ " "
+								+ position_to_square(position[0], position[1]);
 					}
 					else {
 						window.console.log("Unexpected behaviour in function \"move_piece\"");
@@ -716,6 +776,8 @@
 						e_chessboard[7][5] = window.document.getElementById('F8');
 						e_chessboard[7][6] = window.document.getElementById('G8');
 						e_chessboard[7][7] = window.document.getElementById('H8');
+						e_import = window.document.getElementById('input_chessboard');
+						e_export = window.document.getElementById('output_chessboard');
 					},
 					select: function (attribute_id, property_textContent) {
 						var element_attribute_id = attribute_id;
@@ -857,6 +919,66 @@
 							}
 						}
 					},
+					pick_white_team: function () {
+						player_color = "white_team";
+					},
+					pick_black_team: function () {
+						player_color = "black_team";
+					},
+					import: function () {
+						var column_identifiers_line_length = 34;
+						var chessboard_line_length = 36;
+						var total_expected_length = column_identifiers_line_length + (8 * chessboard_line_length) - 1;
+						var import_chessboard = e_import.value;
+						var c;
+						var i;
+						var j;
+						if (import_chessboard.length === total_expected_length) {
+							i = 0;
+							while (i < 8) {
+								j = 0;
+								while (j < 8) {
+									c = import_chessboard.charCodeAt(column_identifiers_line_length + (i * chessboard_line_length) + 2 + (j * 4));
+									if (c === 32) {
+										abstract_chessboard[7 - i][j] = "";
+									}
+									else {
+										abstract_chessboard[7 - i][j] = "&#" + window.Number.parseInt(c).toString() + ";";
+									}
+									j++;
+								}
+								i++;
+							}
+							this.render();
+						}
+						else {
+							window.console.log("Unexpected behaviour in function \"import\" (length: " + import_chessboard.length + "/" + total_expected_length + ")");
+							window.console.log("import_chessboard:\n" + import_chessboard);
+						}
+						return (false);
+					},
+					export: function () {
+						var column_identifiers_line_length = 34;
+						var chessboard_line_length = 36;
+						var export_chessboard = export_original;
+						var i;
+						var j;
+						i = 7;
+						while (0 <= i) {
+							j = 0;
+							while (j < 8) {
+								if (abstract_chessboard[i][j].length === 0) {
+									export_chessboard = export_chessboard.replace("?", " ");
+								}
+								else {
+									export_chessboard = export_chessboard.replace("?", abstract_chessboard[i][j]);
+								}
+								j++;
+							}
+							i--;
+						}
+						e_export.innerHTML = "\`\`\`\n" + export_chessboard + "\`\`\`\n" + last_move_description + "\n";
+					},
 					test_white_rook_e4: function () {
 						e_chessboard[3][4].innerHTML = g_html_codes["chessboard"]["white_team"]["up"]["rook"]["html"];
 					},
@@ -891,6 +1013,21 @@
 	</head>
 	<body onload="ft_load_page()">
 		<table border='0'>
+			<tr>
+				<td colspan="4">
+					<div class="team_selection">
+						<button class="button" id="white_team" onclick="g_chessboard_controller.pick_white_team();"> white </button>
+					</div>
+				</td>
+				<td colspan="4">
+					<div class="team_selection">
+						<button class="button" id="black_team" onclick="g_chessboard_controller.pick_black_team();"> black </button>
+					</div>
+				</td>
+				<td>
+
+				</td>
+			</tr>
 			<tr>
 				<td>
 					<div class="chessboard_coordinates" id="A9">A</div>
@@ -1150,6 +1287,32 @@
 				</td>
 				<td>
 					<div class="chessboard_coordinates" id="G1">1</div>
+				</td>
+			</tr>
+			<tr>
+				<form onsubmit="return g_chessboard_controller.import(this);">
+					<td colspan="7">
+						<div class="input">
+								<textarea id="input_chessboard" required></textarea>
+						</div>
+					</td>
+					<td colspan="2">
+						<div>
+							<input class="button" type="submit" value=" import "/>
+						</div>
+					</td>
+				</form>
+			</tr>
+			<tr>
+				<td colspan="7">
+					<div class="output">
+						<pre id="output_chessboard"></pre>
+					</div>
+				</td>
+				<td colspan="2">
+					<div>
+						<button class="button" id="export_button" onClick="g_chessboard_controller.export();"> export </button>
+					</div>
 				</td>
 			</tr>
 		</table>
