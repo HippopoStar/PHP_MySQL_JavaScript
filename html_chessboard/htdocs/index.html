@@ -288,11 +288,324 @@
 					return (false);
 				}
 
+				function is_empty_square (pos_line, pos_column) {
+					if (0 <= pos_line && pos_line < 8 && 0 <= pos_column && pos_column < 8) {
+						if (abstract_chessboard[pos_line][pos_column].length === 0) {
+							return (true);
+						}
+						return (false);
+					}
+					window.console.log("Unexpected behaviour in function \"is_empty_square\" ([" + pos_line + ", " + pos_column + "])");
+					return (false);
+				}
+
+				function is_available_square (piece_type, piece_color, pos_line, pos_column) {
+					if (0 <= pos_line && pos_line < 8 && 0 <= pos_column && pos_column < 8) {
+						if (abstract_chessboard[pos_line][pos_column].length === 0) {
+							return (true);
+						}
+						else if (g_chessboard_pieces.hasOwnProperty(abstract_chessboard[pos_line][pos_column])) {
+							if (g_chessboard_pieces[abstract_chessboard[pos_line][pos_column]]["color"] === piece_color) {
+								return (false);
+							}
+							else {
+								return (true);
+							}
+						}
+						else {
+							/* Unexpected behaviour */
+							/* Do nothing */
+						}
+					}
+					window.console.log("Unexpected behaviour in function \"is_available_square\" (" + piece_color + "; " + piece_type + "; [" + pos_line + ", " + pos_column + "])");
+					return (false);
+				}
+
 				function calculate_available_moves (piece, position) {
-					return ([[3, 4], [5, 2]]);
+					var piece_type;
+					var piece_color;
+					var available_moves = [];
+					var path_clear;
+					var i;
+					var j;
+					if (g_chessboard_pieces.hasOwnProperty(piece) && position instanceof Array && position.length > 1) {
+						piece_type = g_chessboard_pieces[piece]["type"];
+						piece_color = g_chessboard_pieces[piece]["color"];
+						if ("king" === piece_type) {
+							if (is_available_square(piece_type, piece_color, position[0], position[1] - 1)) {
+								available_moves.push([position[0], position[1] - 1]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0], position[1] + 1)) {
+								available_moves.push([position[0], position[1] + 1]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] - 1, position[1])) {
+								available_moves.push([position[0] - 1, position[1]]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] + 1, position[1])) {
+								available_moves.push([position[0] + 1, position[1]]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] - 1, position[1] - 1)) {
+								available_moves.push([position[0] - 1, position[1] - 1]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] - 1, position[1] + 1)) {
+								available_moves.push([position[0] - 1, position[1] + 1]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] + 1, position[1] - 1)) {
+								available_moves.push([position[0] + 1, position[1] - 1]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] + 1, position[1] + 1)) {
+								available_moves.push([position[0] + 1, position[1] + 1]);
+							}
+						}
+						else if ("knight" === piece_type) {
+							if (is_available_square(piece_type, piece_color, position[0] - 2, position[1] - 1)) {
+								available_moves.push([position[0] - 2, position[1] - 1]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] - 2, position[1] + 1)) {
+								available_moves.push([position[0] - 2, position[1] + 1]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] - 1, position[1] - 2)) {
+								available_moves.push([position[0] - 1, position[1] - 2]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] - 1, position[1] + 2)) {
+								available_moves.push([position[0] - 1, position[1] + 2]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] + 1, position[1] - 2)) {
+								available_moves.push([position[0] + 1, position[1] - 2]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] + 1, position[1] + 2)) {
+								available_moves.push([position[0] + 1, position[1] + 2]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] + 2, position[1] - 1)) {
+								available_moves.push([position[0] + 2, position[1] - 1]);
+							}
+							if (is_available_square(piece_type, piece_color, position[0] + 2, position[1] + 1)) {
+								available_moves.push([position[0] + 2, position[1] + 1]);
+							}
+						}
+						else if ("pawn" === piece_type) {
+							if (piece_color === "white_team") {
+								if (is_empty_square(position[0] + 1, position[1])) {
+									available_moves.push([position[0] + 1, position[1]]);
+									if (position[0] === 1 && is_empty_square(position[0] + 2, position[1])) {
+										available_moves.push([position[0] + 2, position[1]]);
+									}
+								}
+								if (!is_empty_square(position[0] + 1, position[1] - 1) && is_available_square(piece_type, piece_color, position[0] + 1, position[1] - 1)) {
+									available_moves.push([position[0] + 1, position[1] - 1]);
+								}
+								if (!is_empty_square(position[0] + 1, position[1] + 1) && is_available_square(piece_type, piece_color, position[0] + 1, position[1] + 1)) {
+									available_moves.push([position[0] + 1, position[1] + 1]);
+								}
+								/* En passant */
+								if ((position[0] + 1) === 5) {
+									if (is_empty_square(position[0] + 1, position[1] - 1)
+											&& is_empty_square(position[0] + 2, position[1] - 1)
+											&& !is_empty_square(position[0], position[1] - 1)
+											&& is_available_square(piece_type, piece_color, position[0], position[1] - 1)) {
+										if (g_chessboard_pieces.hasOwnProperty(abstract_chessboard[position[0]][position[1] - 1])) {
+											if (g_chessboard_pieces[abstract_chessboard[position[0]][position[1] - 1]]["type"] === "pawn") {
+												available_moves.push([position[0] + 1, position[1] - 1]);
+											}
+										}
+										else {
+											window.console.log("Unexpected behaviour in function \"calculate_available_moves\"");
+										}
+									}
+									if (is_empty_square(position[0] + 1, position[1] + 1)
+											&& is_empty_square(position[0] + 2, position[1] + 1)
+											&& !is_empty_square(position[0], position[1] + 1)
+											&& is_available_square(piece_type, piece_color, position[0], position[1] + 1)) {
+										if (g_chessboard_pieces.hasOwnProperty(abstract_chessboard[position[0]][position[1] + 1])) {
+											if (g_chessboard_pieces[abstract_chessboard[position[0]][position[1] + 1]]["type"] === "pawn") {
+												available_moves.push([position[0] + 1, position[1] + 1]);
+											}
+										}
+										else {
+											window.console.log("Unexpected behaviour in function \"calculate_available_moves\"");
+										}
+									}
+								}
+							}
+							else {
+								if (is_empty_square(position[0] - 1, position[1])) {
+									available_moves.push([position[0] - 1, position[1]]);
+									if (position[0] === 6 && is_empty_square(position[0] - 2, position[1])) {
+										available_moves.push([position[0] - 2, position[1]]);
+									}
+								}
+								if (!is_empty_square(position[0] - 1, position[1] - 1) && is_available_square(piece_type, piece_color, position[0] - 1, position[1] - 1)) {
+									available_moves.push([position[0] - 1, position[1] - 1]);
+								}
+								if (!is_empty_square(position[0] - 1, position[1] + 1) && is_available_square(piece_type, piece_color, position[0] - 1, position[1] + 1)) {
+									available_moves.push([position[0] - 1, position[1] + 1]);
+								}
+								/* En passant */
+								if ((position[0] - 1) === 2) {
+									if (is_empty_square(position[0] - 1, position[1] - 1)
+											&& is_empty_square(position[0] - 2, position[1] - 1)
+											&& !is_empty_square(position[0], position[1] - 1)
+											&& is_available_square(piece_type, piece_color, position[0], position[1] - 1)) {
+										if (g_chessboard_pieces.hasOwnProperty(abstract_chessboard[position[0]][position[1] - 1])) {
+											if (g_chessboard_pieces[abstract_chessboard[position[0]][position[1] - 1]]["type"] === "pawn") {
+												available_moves.push([position[0] - 1, position[1] - 1]);
+											}
+										}
+										else {
+											window.console.log("Unexpected behaviour in function \"calculate_available_moves\"");
+										}
+									}
+									if (is_empty_square(position[0] - 1, position[1] + 1)
+											&& is_empty_square(position[0] - 2, position[1] + 1)
+											&& !is_empty_square(position[0], position[1] + 1)
+											&& is_available_square(piece_type, piece_color, position[0], position[1] + 1)) {
+										if (g_chessboard_pieces.hasOwnProperty(abstract_chessboard[position[0]][position[1] + 1])) {
+											if (g_chessboard_pieces[abstract_chessboard[position[0]][position[1] + 1]]["type"] === "pawn") {
+												available_moves.push([position[0] - 1, position[1] + 1]);
+											}
+										}
+										else {
+											window.console.log("Unexpected behaviour in function \"calculate_available_moves\"");
+										}
+									}
+								}
+							}
+						}
+						else {
+							if ("queen" === piece_type || "rook" === piece_type) {
+								path_clear = true;
+								j = position[1] - 1;
+								while (path_clear && 0 <= j) {
+									if (is_empty_square(position[0], j)) {
+										available_moves.push([position[0], j]);
+									}
+									else {
+										path_clear = false;
+										if (is_available_square(piece_type, piece_color, position[0], j)) {
+											available_moves.push([position[0], j]);
+										}
+									}
+									j--;
+								}
+								path_clear = true;
+								j = position[1] + 1;
+								while (path_clear && j < 8) {
+									if (is_empty_square(position[0], j)) {
+										available_moves.push([position[0], j]);
+									}
+									else {
+										path_clear = false;
+										if (is_available_square(piece_type, piece_color, position[0], j)) {
+											available_moves.push([position[0], j]);
+										}
+									}
+									j++;
+								}
+								path_clear = true;
+								i = position[0] - 1;
+								while (path_clear && 0 <= i) {
+									if (is_empty_square(i, position[1])) {
+										available_moves.push([i, position[1]]);
+									}
+									else {
+										path_clear = false;
+										if (is_available_square(piece_type, piece_color, i, position[1])) {
+											available_moves.push([i, position[1]]);
+										}
+									}
+									i--;
+								}
+								path_clear = true;
+								i = position[0] + 1;
+								while (path_clear && i < 8) {
+									if (is_empty_square(i, position[1])) {
+										available_moves.push([i, position[1]]);
+									}
+									else {
+										path_clear = false;
+										if (is_available_square(piece_type, piece_color, i, position[1])) {
+											available_moves.push([i, position[1]]);
+										}
+									}
+									i++;
+								}
+							}
+							if ("queen" === piece_type || "bishop" === piece_type) {
+								path_clear = true;
+								i = position[0] - 1;
+								j = position[1] - 1;
+								while (path_clear && 0 <= i && 0 <= j) {
+									if (is_empty_square(i, j)) {
+										available_moves.push([i, j]);
+									}
+									else {
+										path_clear = false;
+										if (is_available_square(piece_type, piece_color, i, j)) {
+											available_moves.push([i, j]);
+										}
+									}
+									i--;
+									j--;
+								}
+								path_clear = true;
+								i = position[0] - 1;
+								j = position[1] + 1;
+								while (path_clear && 0 <= i && j < 8) {
+									if (is_empty_square(i, j)) {
+										available_moves.push([i, j]);
+									}
+									else {
+										path_clear = false;
+										if (is_available_square(piece_type, piece_color, i, j)) {
+											available_moves.push([i, j]);
+										}
+									}
+									i--;
+									j++;
+								}
+								path_clear = true;
+								i = position[0] + 1;
+								j = position[1] - 1;
+								while (path_clear && i < 8 && 0 <= j) {
+									if (is_empty_square(i, j)) {
+										available_moves.push([i, j]);
+									}
+									else {
+										path_clear = false;
+										if (is_available_square(piece_type, piece_color, i, j)) {
+											available_moves.push([i, j]);
+										}
+									}
+									i++;
+									j--;
+								}
+								path_clear = true;
+								i = position[0] + 1;
+								j = position[1] + 1;
+								while (path_clear && i < 8 && 0 <= j < 8) {
+									if (is_empty_square(i, j)) {
+										available_moves.push([i, j]);
+									}
+									else {
+										path_clear = false;
+										if (is_available_square(piece_type, piece_color, i, j)) {
+											available_moves.push([i, j]);
+										}
+									}
+									i++;
+									j++;
+								}
+							}
+						}
+					}
+					else {
+						window.console.log("Unexpected behaviour in function \"calculate_available_moves\"");
+					}
+					return (available_moves);
 				}
 
 				function is_available_move (position) {
+					window.console.log("g_chessboard_controller - is_available_move");
 					var i;
 					if (position instanceof Array && position.length > 1
 							&& previously_selected_piece.hasOwnProperty("available_moves")
@@ -318,7 +631,22 @@
 				}
 
 				function move_piece (position) {
-
+					window.console.log("g_chessboard_controller - move_piece");
+					if (position instanceof Array && position.length > 1
+							&& 0 <= position[0] && position[0] < 8
+							&& 0 <= position[1] && position[1] < 8
+							&& previously_selected_piece.hasOwnProperty("position")
+							&& previously_selected_piece["position"] instanceof Array && previously_selected_piece["position"].length > 1
+							&& 0 <= previously_selected_piece["position"][0] && previously_selected_piece["position"][0] < 8
+							&& 0 <= previously_selected_piece["position"][1] && previously_selected_piece["position"][1] < 8
+							&& previously_selected_piece.hasOwnProperty("type")
+							&& previously_selected_piece.hasOwnProperty("color")) {
+						abstract_chessboard[position[0]][position[1]] = g_html_codes["chessboard"][previously_selected_piece["color"]]["up"][previously_selected_piece["type"]]["html"];
+						abstract_chessboard[previously_selected_piece["position"][0]][previously_selected_piece["position"][1]] = "";
+					}
+					else {
+						window.console.log("Unexpected behaviour in function \"move_piece\"");
+					}
 				}
 
 				return ({
@@ -419,8 +747,21 @@
 								}
 								else {
 									if (is_available_move(selected_position)) {
-										move_piece(selected_position);
-										// previously_selected_piece = {};
+										if (previously_selected_piece.hasOwnProperty("color")) {
+											if (previously_selected_piece["color"] === player_color) {
+												move_piece(selected_position);
+												previously_selected_piece = {};
+											}
+											else {
+												previously_selected_piece["type"] = g_chessboard_pieces[element_property_textContent]["type"];
+												previously_selected_piece["color"] = g_chessboard_pieces[element_property_textContent]["color"];
+												previously_selected_piece["position"] = selected_position;
+												previously_selected_piece["available_moves"] = calculate_available_moves(element_property_textContent, selected_position);
+											}
+										}
+										else {
+											window.console.log("Unexpected behaviour in function \"select\"");
+										}
 									}
 									else if (is_opponent_piece(element_property_textContent)) {
 										previously_selected_piece["type"] = g_chessboard_pieces[element_property_textContent]["type"];
@@ -458,7 +799,17 @@
 								}
 							}
 						}
-						else if (previously_selected_piece.hasOwnProperty("type")) {
+						else if (element_property_textContent.length === 0 && previously_selected_piece.hasOwnProperty("type")) {
+							if (is_available_move(selected_position)) {
+								if (previously_selected_piece.hasOwnProperty("color")) {
+									if (previously_selected_piece["color"] === player_color) {
+										move_piece(selected_position);
+									}
+								}
+								else {
+									window.console.log("Unexpected behaviour in function \"select\"");
+								}
+							}
 							previously_selected_piece = {};
 							this.render();
 						}
@@ -513,13 +864,25 @@
 						abstract_chessboard[5][2] = g_html_codes["chessboard"]["white_team"]["up"]["knight"]["html"];
 						this.render();
 					},
-					test_position_to_square_h5: function () {
+					test_log_position_to_square_h5: function () {
 						window.console.log("test_position_to_square_h5: " + position_to_square(4, 7));
+					},
+					test_add_queen_pos_f5: function () {
+						abstract_chessboard[4][6] = g_html_codes["chessboard"]["white_team"]["up"]["queen"]["html"];
+						this.render();
+					},
+					test_pawn_en_passant: function () {
+						abstract_chessboard[1][1] = "";
+						abstract_chessboard[3][1] = g_html_codes["chessboard"]["white_team"]["up"]["pawn"]["html"];
+						abstract_chessboard[3][2] = g_html_codes["chessboard"]["black_team"]["up"]["pawn"]["html"];
+						this.render();
 					},
 					test: function () {
 						this.test_render_knight_c6();
 						this.test_white_rook_e4();
-						this.test_position_to_square_h5();
+						this.test_log_position_to_square_h5();
+						this.test_add_queen_pos_f5();
+						this.test_pawn_en_passant();
 					}
 				});
 			} ) ();
