@@ -11,10 +11,10 @@ world_topo_json_file_path='htdocs/json/world.topo.json'
 context = {
   'reference_country': 'FRA',
   'neighbour_countries': [
-    'AUT',
+    #'AUT',
     'BEL',
     'CHE',
-    'CZE',
+    #'CZE',
     'DEU',
     'ESP',
     'GBR',
@@ -101,7 +101,7 @@ def get_arcs(topo_json):
       print (segment)
       if not is_segment_part_of_reference_country(segment):
         if segment >= 0 or (segment < 0 and not is_segment_part_of_another_neighbour_country(country_id, segment)):
-          context['arcs'].append(topo_json['arcs'][segment if segment >= 0 else (-segment)])
+          context['arcs'].append(topo_json['arcs'][segment if segment >= 0 else (-segment) - 1])
   #print(json.dumps(context['arcs'], indent=4))
 
   datamaps_arc = {
@@ -128,7 +128,7 @@ def get_arcs(topo_json):
       datamaps_arc['destination']['latitude'] = (coord_dest[1] * topo_json['transform']['scale'][1]) + topo_json['transform']['translate'][1]
       coord_orig[0] = coord_dest[0]
       coord_orig[1] = coord_dest[1]
-      #print('{}{}'.format(datamaps_arc, ','))
+      #print('{},'.format(datamaps_arc))
       print("\t\t\t\t\t\t\t\t{'origin':{'longitude':%.5f,'latitude':%.5f},'destination':{'longitude':%.5f,'latitude':%.5f}},"%(datamaps_arc['origin']['longitude'], datamaps_arc['origin']['latitude'], datamaps_arc['destination']['longitude'], datamaps_arc['destination']['latitude']))
 
 
