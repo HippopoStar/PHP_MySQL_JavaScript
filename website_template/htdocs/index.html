@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+		<!-- EI2JAV 3.5.4.2 & 5.1.1 -->
+		<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 		<style type="text/css">
 
 			#header {
@@ -27,7 +28,7 @@
 		<script type="text/javascript">
 			"use strict";
 
-			var g_myRequestsManager;
+			var g_ajax;
 			var g_myMap;
 			var g_myPageAnimation;
 
@@ -35,6 +36,7 @@
 			/* GLOBAL NAMESPACE *************/
 			/********************************/
 
+			/* EI2JAV - 2.2.4 */
 			if (!Function.prototype.bind) {
 				Function.prototype.bind = function (context) {
 					var myFunction;
@@ -165,48 +167,50 @@
 			/* REQUESTS MANAGER *************/
 			/********************************/
 
-			g_myRequestsManager = ( function () {
-				/**
-				* Obtenir une instance de la classe permettant d'effectuer des requetes cross-domain suivant le navigateur courant
-				* @return {Object} Une instance de la classe requise
-				*/
-				function getXDomainRequest () {
-					var xdr;
+			/* EI2JAV - 5.1.6.2 */
+			g_ajax = ( function () {
 
-					xdr = null;
-					if (window.XDomainRequest) {
-						xdr = new XDomainRequest ();
+				function init( responseHandler ) {
+					try {
+						request = new XMLHttpRequest();
+					} catch ( e ) {
+						request = new ActiveXObject( "Msxml2.XMLHTTP" );
 					}
-					else if (window.XMLHttpRequest) {
-						xdr = new XMLHttpRequest ();
-					}
-					return (xdr);
+					request.onreadystatechange = ( function ( request, responseHandler ) {
+						return ( function() {
+							if ( ( request.status == 200 || !request.status ) && request.readyState == 4 ) {
+								responseHandler( request.response );
+							}
+						} );
+					} ) ( request, responseHandler );
+					return request;
 				}
-				return ({
-					/**
-					* Effectuer l'envoie d'une requete POST au serveur, et appeler une fonction prenant en parametre le corps de la reponse du serveur
-					* @param paramsHTTP {String} Le corps de la requete POST
-					* @param callBack {Function} La fonction prenant en parametre le corps de la reponse si la requete reussie
-					*/
-					sendPostRequest: function (paramsHTTP, callBack) {
-						var xmlhttp;
 
-						xmlhttp = getXDomainRequest();
-						if (xmlhttp) {
-							xmlhttp.onload = function () {
-								callBack(this.responseText);
-							}
-							xmlhttp.onerror = function () {
-								alert("Une erreur est survenue lors de l'envoi de la requete");
-							}
-							xmlhttp.open("POST", g_serverAddress);
-							xmlhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-							try {
-								xmlhttp.send(paramsHTTP);
-							} catch (err) {
-								alert("AJAX error: " + err);
-							}
+				function send( request, url, type, parameters ) {
+					var paramsHTTP = null;
+					if ( parameters ) {
+						for ( var p in parameters ) {
+							if ( paramsHTTP != "" )
+								paramsHTTP += "&";
+							paramsHTTP += p + "=" + encodeURIComponent( parameters[ p ] );
 						}
+					}
+					if ( type == "GET" ) {
+						if ( paramsHTTP ) {
+							url += "?" + paramsHTTP;
+						}
+						request.open( "GET", url, false );
+					} else {
+						request.open( "POST", url, false );
+						request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+					}
+					request.send( type == "POST" ? paramsHTTP : null );
+				}
+
+				return ({
+					send: function( url, type, parameters, callBack ) {
+						this.request = init( callBack );
+						send( this.request, url, type, parameters );
 					}
 				});
 			} ) ();
