@@ -1,0 +1,24 @@
+services:
+
+  frontend:
+    container_name: node
+    image: node:lts
+    # user: node
+    # environment:
+    #   - NODE_ENV=production
+    ports:
+      - 5173:5173
+    volumes:
+      - ./frontend/my-app:/home/node/my-app
+    working_dir: /home/node/my-app
+    command: ["npm", "run", "dev", "--", "--host"]
+
+  backend:
+    container_name: rust
+    image: rust:latest
+    ports:
+      - 3000:3000
+    volumes:
+      - ./backend/my-app:/root/my-app
+    working_dir: /root/my-app
+    command: ["cargo", "run"]
